@@ -2,6 +2,7 @@
   "name": "challenge-03",
   "version": "1.0.0",
   "description": "",
+  "type": "module",
   "main": "app.js",
   "scripts": {
     "start": "nodemon src/app.js"
