@@ -6,8 +6,13 @@ import { clientRouter } from './routes/client.router.js'
 import { authRouter } from './routes/auth.router.js'
 import { connectMongo, connectSocket } from './config/utils.js'
 import { chatRouter } from './routes/chats.router.js'
+import { sessionsRouter } from './routes/sessions.router.js'
+import { viewsRouter } from './routes/views.router.js'
 import session from 'express-session'
 import cookieParser from 'cookie-parser'
+import MongoStore from 'connect-mongo'
+import { iniPassport } from './config/passport.config.js'
+import passport from 'passport'
 
 const app = express()
 const PORT = 8080
@@ -26,15 +31,22 @@ app.set('views', './views')
 app.set(cookieParser())
 app.use(
   session({
+    store: MongoStore.create({ mongoUrl: 'mongodb+srv://yhanahi:SKzYd1nKz5O80Q3Y@ecommerce.wh4ib3c.mongodb.net/?retryWrites=true&w=majority'}),
     secret: 'mysecretkey',
     resave: false,
     saveUninitialized: false
   })
 )
+iniPassport()
+app.use(passport.initialize())
+app.use(passport.session())
+
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 app.use(express.static('public'))
 
+app.use('/api/sessions', sessionsRouter)
+app.use('/', viewsRouter)
 app.use('/chat', chatRouter)
 app.use('/api/products', productRouter)
 app.use('/api/carts', cartRouter)
