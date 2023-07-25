@@ -1,59 +1,63 @@
-import { engine } from 'express-handlebars'
-import express from 'express'
-import { productRouter } from './routes/products.router.js'
-import { cartRouter } from './routes/carts.router.js'
-import { clientRouter } from './routes/client.router.js'
-import { authRouter } from './routes/auth.router.js'
-import { connectMongo, connectSocket } from './config/utils.js'
-import { chatRouter } from './routes/chats.router.js'
-import { sessionsRouter } from './routes/sessions.router.js'
-import { viewsRouter } from './routes/views.router.js'
-import session from 'express-session'
-import cookieParser from 'cookie-parser'
+import express from "express";
+import { prodructsRouter } from "./routes/products.router.js";
+import { cartsRouter } from "./routes/carts.router.js";
+import { __dirname, connectMongo } from "./utils.js";
+import path from "path";
+import handlebars from "express-handlebars"
+import { viewsRouter } from "./routes/views.router.js";
+import cors from "cors";
+import { connectSocket } from "./sockets/chat.js";
+import { usersRouter } from "./routes/users.router.js";
+import { authRouter } from "./routes/auth.router.js";
+import cookieParser from 'cookie-parser';
+import session from "express-session";
 import MongoStore from 'connect-mongo'
-import { iniPassport } from './config/passport.config.js'
-import passport from 'passport'
+import { iniPassport } from "./config/passport.config.js";
+import passport from "passport";
+import { sessionsRouter } from "./routes/session.router.js";
+import config from "./config/config.js";
 
 const app = express()
-const PORT = 8080
+const port = config.port;
 
-const httpServer = app.listen(PORT, () => {
-  console.log(`listening on PORT: http://localhost:${PORT}`)
-})
+const httpServer = app.listen(port, () => {
+  console.log(`Example app listening on http://localhost:${port}`);
+});
+connectSocket(httpServer);
+connectMongo();
 
-connectMongo()
-connectSocket(httpServer)
+app.use(express.json())
+app.use(express.urlencoded({ extended: true }))
+app.use(express.static(path.join(__dirname, "public")));
+app.use(cors());
+app.use(cookieParser());
 
-app.engine('handlebars', engine())
-app.set('view engine', 'handlebars')
-app.set('views', './views')
-
-app.set(cookieParser())
+//SESSION
 app.use(
   session({
-    store: MongoStore.create({ mongoUrl: 'mongodb+srv://yhanahi:SKzYd1nKz5O80Q3Y@ecommerce.wh4ib3c.mongodb.net/?retryWrites=true&w=majority'}),
+    store: MongoStore.create({
+      mongoUrl: 'mongodb+srv://yhanahi:SKzYd1nKz5O80Q3Y@ecommerce.wh4ib3c.mongodb.net/?retryWrites=true&w=majority', ttl: 7200
+    }),
     secret: 'mysecretkey',
     resave: false,
     saveUninitialized: false
   })
-)
-iniPassport()
-app.use(passport.initialize())
-app.use(passport.session())
+);
+//PASSPORT
+iniPassport();
+app.use(passport.initialize());
+app.use(passport.session());
 
-app.use(express.json())
-app.use(express.urlencoded({ extended: true }))
-app.use(express.static('public'))
+app.engine("handlebars", handlebars.engine());
+app.set("views", path.join(__dirname, "views"))
+app.set('view engine', 'handlebars');
 
-app.use('/api/sessions', sessionsRouter)
-app.use('/', viewsRouter)
-app.use('/chat', chatRouter)
-app.use('/api/products', productRouter)
-app.use('/api/carts', cartRouter)
-app.use('/', clientRouter)
-app.use('/auth', authRouter)
-app.get('/*', async (req, res) => {
-  return res.status(404).json({ status: 'error', message: 'incorrect route' })
-})
+app.use("/api/products", prodructsRouter)
+app.use("/api/users", usersRouter)
+app.use("/api/sessions", sessionsRouter)
+app.use("/", viewsRouter)
 
-export { app }
+
+app.use("/api/carts", cartsRouter)
+app.use("/auth", authRouter)
+
